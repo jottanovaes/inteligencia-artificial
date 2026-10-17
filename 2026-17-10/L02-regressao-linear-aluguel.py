@@ -4,8 +4,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 import joblib
 
+
+
 # iniciando o dataset
-df = pd.read_csv("/workspaces/inteligencia-artificial/2026-17-10/17 - metro-preco-aluguel.csv")
+df = pd.read_csv("./2026-17-10/17 - metro-preco-aluguel.csv")
 
 # separação entre características(X) e Target(y)
 X = df[['Tamanho_m2']]
@@ -30,3 +32,7 @@ novo_imovel = pd.DataFrame({'Tamanho_m2': [330]})
 
 previsao = modelo.predict(novo_imovel)
 print(f"Preço estimado do aluguel: {previsao[0]:,.2f}")
+
+# exportar modelo
+joblib.dump(modelo, './2026-17-10/modelos/modelo_aluguel.pkl')
+
