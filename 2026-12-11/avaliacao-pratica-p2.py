@@ -67,3 +67,38 @@ for coluna in colunas_continuas:
 
 print("\n\nResumo de valores nulos após a imputação:")
 print(resumo(linhas_remover))
+
+#==========================================================
+#          IMPUTAÇÃO SEQUENCIAL E TEMPORAL
+#==========================================================
+## No dataframe de telemetria/série temporal, aplique ffill, bfill ou
+## Interpolação Linear (interpolate()) conforme a melhor lógica observada.
+print("\n\nResumo de valores nulos no dataframe consultas:")
+print(resumo(consultas))
+
+# Garante a ordem cronológica antes de imputar
+consultas["data_hora"] = pd.to_datetime(consultas["data_hora"])
+consultas = consultas.sort_values("data_hora")
+
+print("\n\nDataFrame Antes:")
+print(consultas)
+
+# Comparação dos 3 métodos para observar a melhor lógica
+df_temp = consultas.copy()
+df_temp["ffill"] = consultas["requisicoes_minuto"].ffill()
+df_temp["bfill"] = consultas["requisicoes_minuto"].bfill()
+df_temp["interpolate"] = consultas["requisicoes_minuto"].interpolate()
+print(f"\n\nComparação ffill x bfill x interpolate:\n{df_temp[consultas['requisicoes_minuto'].isna()]}")
+
+# Decisão: Interpolação Linear
+# - A série tem tendência crescente constante (120 -> 185) em intervalos regulares de 10 min.
+# - ffill repete o valor anterior (ex: 128, 128 e depois salta para 140) -> cria "degraus" falsos.
+# - bfill antecipa o valor futuro (ex: 140, 140 após 128) -> também cria degraus.
+# - interpolate() traça uma reta entre o ponto anterior e o posterior (ex: 132, 136),
+#   respeitando a tendência. Os nulos estão todos no meio da série, então não sobram NaN.
+consultas["requisicoes_minuto"] = consultas["requisicoes_minuto"].interpolate()
+
+print(f"\n\nInterpolação Linear:\n{consultas}")
+
+print("\n\nResumo de valores nulos após a imputação (consultas):")
+print(resumo(consultas))
