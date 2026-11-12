@@ -36,3 +36,34 @@ if colunas_remover:
   print(f"\n\nDF removido coluna(s) {colunas_remover}:\n {linhas_remover}")
 else:
   print("\n\nNenhuma coluna possui mais de 50% de dados ausentes. Nenhuma coluna removida.")
+
+
+## Para variáveis numéricas contínuas com distribuição simétrica/normal
+## (|skew| <= 0.5), impute os nulos com a Média.
+## Identificação de Distribuição -> COEFICIENTE DE ASSIMETRIA (skew)
+colunas_continuas = ["idade_cliente", "renda_mensal", "potencia_cv", "score_credito", "valor_avaliado_brt"]
+
+for coluna in colunas_continuas:
+  if linhas_remover[coluna].isna().sum() == 0:
+    continue  # sem nulos, nada a imputar
+
+  coef_assim = linhas_remover[coluna].skew()
+  # Trunca o valor em uma casa decimal
+  coef_assim = math.floor(coef_assim * 10) / 10
+  # print(f"\n\n{coluna}: Coeficiente de Assimetria => {coef_assim}")
+
+  if coef_assim >= -0.5 and coef_assim <= 0.5:
+    # Obtém a MÉDIA e preenche os nulos com a MÉDIA
+    media = linhas_remover[coluna].mean()
+    linhas_remover[coluna] = linhas_remover[coluna].fillna(media)
+    print(f"{coluna}: Distribuição simétrica => nulos imputados com a Média ({media:.2f})")
+  else:
+    ## Para variáveis com distribuição assimétrica (|skew| > 0.5) ou presença
+    ## de outliers, impute os nulos com a Mediana.
+    # Obtém a MEDIANA e preenche os nulos com a MEDIANA
+    mediana = linhas_remover[coluna].median()
+    linhas_remover[coluna] = linhas_remover[coluna].fillna(mediana)
+    print(f"{coluna}: Distribuição assimétrica => nulos imputados com a Mediana ({mediana:.2f})")
+
+print("\n\nResumo de valores nulos após a imputação:")
+print(resumo(linhas_remover))
