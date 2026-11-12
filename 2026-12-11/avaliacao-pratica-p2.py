@@ -24,3 +24,15 @@ linhas_remover = clientes.dropna(subset=["cpf_cliente", "id_cliente"]).copy()
 
 if linhas_remover.shape[0] < clientes.shape[0]:
   print(f"\n\nDF removido linha:\n {linhas_remover}")
+
+
+## Remova a coluna que ultrapassa o limite de 50% de dados ausentes
+## Informação muito incompleta para imputar
+percentual_nulos_col = (linhas_remover.isna().sum() / len(linhas_remover)) * 100
+colunas_remover = percentual_nulos_col[percentual_nulos_col > 50].index.tolist()
+
+if colunas_remover:
+  linhas_remover = linhas_remover.drop(columns=colunas_remover)
+  print(f"\n\nDF removido coluna(s) {colunas_remover}:\n {linhas_remover}")
+else:
+  print("\n\nNenhuma coluna possui mais de 50% de dados ausentes. Nenhuma coluna removida.")
