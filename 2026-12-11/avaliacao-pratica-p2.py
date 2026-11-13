@@ -1,5 +1,12 @@
+import os
 import pandas as pd
 import math
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+import joblib
 
 ## funcao para juntar lado a lado total e porcentagem de valores nulos
 def resumo(df):
@@ -102,3 +109,182 @@ print(f"\n\nInterpolação Linear:\n{consultas}")
 
 print("\n\nResumo de valores nulos após a imputação (consultas):")
 print(resumo(consultas))
+
+# Etapa 1: Tratamento de Registros Duplicados
+
+# Identificando duplicatas exatas
+print("\nQuantidade de duplicatas exatas:")
+print(linhas_remover.duplicated().sum())
+
+# Removendo duplicatas exatas
+df_sem_duplicadas = linhas_remover.drop_duplicates().copy()
+
+print("\nAntes da remoção:", len(linhas_remover))
+print("\nDepois da remoção:", len(df_sem_duplicadas))
+
+# Identificando duplicatas parciais pelo CPF
+
+# Convertendo data_solicitacao para datetime
+df_sem_duplicadas['data_solicitacao'] = pd.to_datetime(df_sem_duplicadas['data_solicitacao'])
+
+# Ordenando por CPF e data de solicitação
+df_ordenado = df_sem_duplicadas.sort_values(
+    by=['cpf_cliente', 'data_solicitacao'],
+    ascending=[True, True]
+)
+
+# Removendo duplicatas parciais, mantendo a última ocorrência
+df_final = df_ordenado.drop_duplicates(
+    subset=['cpf_cliente'],
+    keep='last'
+).reset_index(drop=True)
+
+print("\nDataFrame após remoção das duplicatas parciais:")
+print(df_final)
+
+print("\nQuantidade de registros após tratamento:")
+print(len(df_final))
+
+# atualizando dataFrame 
+linhas_remover = df_final.copy()
+
+# Detecção de Outliers
+col_numericas = [
+    'idade_cliente',
+    'renda_mensal',
+    'potencia_cv',
+    'ano_fabricacao',
+    'score_credito',
+    'valor_avaliado_brt'
+]
+
+# boxplots
+fig, ax = plt.subplots(2, 4, figsize=(12, 6))
+
+axes_achatados = ax.flatten()
+
+for i, nome_col in enumerate(col_numericas):
+    axes_achatados[i].set_title(nome_col)
+
+    sns.boxplot(
+        y=linhas_remover[nome_col],
+        ax=axes_achatados[i]
+    )
+
+for j in range(len(col_numericas), len(axes_achatados)):
+    fig.delaxes(axes_achatados[j])
+
+plt.tight_layout()
+plt.show()
+
+# kdeplots
+fig, ax = plt.subplots(2, 4, figsize=(12, 6))
+
+axes_achatados = ax.flatten()
+
+for i, nome_col in enumerate(col_numericas):
+    axes_achatados[i].set_title(nome_col)
+
+    sns.kdeplot(
+        x=linhas_remover[nome_col],
+        ax=axes_achatados[i]
+    )
+
+for j in range(len(col_numericas), len(axes_achatados)):
+    fig.delaxes(axes_achatados[j])
+
+plt.tight_layout()
+plt.show()
+
+
+# regra do IQR
+print("\n\nCalculando os limites pelo IQR")
+
+for nome_col in col_numericas:
+
+    Q1 = linhas_remover[nome_col].quantile(0.25)
+    Q3 = linhas_remover[nome_col].quantile(0.75)
+
+    IQR = Q3 - Q1
+
+    limite_inferior = Q1 - 1.5 * IQR
+    limite_superior = Q3 + 1.5 * IQR
+
+    print(f"\nColuna: {nome_col}")
+    print(f"Q1: {Q1:.2f}")
+    print(f"Q3: {Q3:.2f}")
+    print(f"IQR: {IQR:.2f}")
+    print(f"Limite inferior: {limite_inferior:.2f}")
+    print(f"Limite superior: {limite_superior:.2f}")
+
+
+# aplicando CAPPING (WINSORIZAÇÃO)
+print("\n\nAplicando Capping nos valores extremos")
+
+for nome_col in col_numericas:
+
+    Q1 = linhas_remover[nome_col].quantile(0.25)
+    Q3 = linhas_remover[nome_col].quantile(0.75)
+
+    IQR = Q3 - Q1
+
+    limite_inferior = Q1 - 1.5 * IQR
+    limite_superior = Q3 + 1.5 * IQR
+
+    # Limitando valores inferiores
+    linhas_remover[nome_col] = np.where(
+        linhas_remover[nome_col] < limite_inferior,
+        limite_inferior,
+        linhas_remover[nome_col]
+    )
+
+    # Limitando valores superiores
+    linhas_remover[nome_col] = np.where(
+        linhas_remover[nome_col] > limite_superior,
+        limite_superior,
+        linhas_remover[nome_col]
+    )
+
+    print(f"\nCapping aplicado: {nome_col}")
+    print(f"Limite inferior: {limite_inferior:.2f}")
+    print(f"Limite superior: {limite_superior:.2f}")
+
+print("\nDataFrame após aplicação do Capping:")
+print(linhas_remover)
+
+
+# Etapa2: Divisão da amostra e treinamento modelo
+
+# Definindo as variáveis X e y
+X = linhas_remover[['potencia_cv']]
+y = linhas_remover[['valor_avaliado_brt']]
+
+# Dividindo os dados em: 70% treinamento e 30% teste
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42
+)
+
+# Exibindo a quantidade de registros em cada conjunto
+print("\n\nETAPA 2: Divisão da Amostra")
+
+print("\nQuantidade de registros:")
+print(f"Treinamento: {len(X_train)} \t Teste: {len(X_test)}")
+print(f"\nDimensões: X_train: {X_train.shape}, X_test: {X_test.shape}, y_train: {y_train.shape}, y_teste: {y_test.shape}")
+
+# Criando o modelo de Regressão Linear
+model = LinearRegression()
+
+# Treinando o modelo
+model.fit(X_train, y_train)
+
+print("\nModelo de Regressão Linear treinado com sucesso!")
+
+# Etapa 3: Exportação do Modelo 
+
+# Criando o diretório Modelos
+os.makedirs("Modelos", exist_ok=True)
+
+# Salvando o modelo treinado
+joblib.dump(model, "Modelos/modelo_veiculo.pkl")
+
+print("\nModelo salvo!")

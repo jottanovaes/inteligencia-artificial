@@ -1,0 +1,34 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Precificação de Veículos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Precificação de Veículos</h1>
+
+        <p class="descricao">
+            Informe a potência do veículo para obter uma estimativa de seu valor.
+        </p>
+
+        <form action="/resultado" method="POST">
+            <label for="potencia_cv">Potência do veículo (CV):</label>
+
+            <input
+                type="number"
+                id="potencia_cv"
+                name="potencia_cv"
+                step="any"
+                required
+            >
+
+            <button type="submit">Calcular valor</button>
+        </form>
+    </div>
+
+</body>
+</html>

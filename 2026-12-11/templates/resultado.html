@@ -1,0 +1,28 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultado da Avaliação</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Resultado da Avaliação</h1>
+
+        <p class="descricao">
+            Confira abaixo a estimativa calculada pelo modelo.
+        </p>
+
+        <p class="detalhe">
+            Potência informada: {{ potencia }} CV
+        </p>
+
+        <p class="valor">{{ valor }}</p>
+
+        <a href="/" class="voltar">Realizar nova consulta</a>
+    </div>
+
+</body>
+</html>
